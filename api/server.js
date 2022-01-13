@@ -2,7 +2,8 @@
 const express = require('express')
 const Users = require('./users/model')
 const server = express()
-const { validateBody } = require('./users/middleware')
+const { validateBody, checkId } = require('./users/middleware')
+const { json } = require('express/lib/response')
 server.use(express.json())
 
 
@@ -20,7 +21,7 @@ server.get('/api/users/:id', (req, res, next) => {
     Users.findById(req.params.id)
         .then(user => {
             if(!user) {
-                throw new Error('user not found')
+                throw new Error('does not exist')
             }
             else {
                 res.status(200).json(user)
@@ -31,7 +32,7 @@ server.get('/api/users/:id', (req, res, next) => {
         })
 })
 
-server.post('/api/users', (req, res, next) => {
+server.post('/api/users', validateBody, (req, res, next) => {
     Users.insert(req.body)
         .then(userToCreate => {
             res.status(201).json(userToCreate)
@@ -41,6 +42,26 @@ server.post('/api/users', (req, res, next) => {
         })
 })
 
+server.delete('/api/users/:id', checkId, (req, res, next) => {
+    Users.remove(req.params.id)
+        .then(userToDelete => {
+            console.log(userToDelete)
+            res.status(200).json(userToDelete)
+        })
+        .catch(err => {
+            res.status(500).json({message: err.message})
+        })
+})
+
+server.put('/api/users/:id', validateBody, checkId, (req, res, next) => {
+    Users.update(req.params.id, req.body)
+        .then(userUpdated => {
+            res.status(200).json(userUpdated)
+        })
+        .catch(err => {
+            json.status(500).json({message: err.message})
+        })
+})
 
 
 module.exports = server
